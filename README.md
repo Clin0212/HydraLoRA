@@ -53,7 +53,7 @@ The source code is organized as below:
     -- moe.py # code for MoE
     -- lora_init.py # using k-means to init hydralora
     -- lora_training.py # main code for hydralora learning 
-    -- lora_inrerence.py # main code for hydralora  inference
+    -- lora_inference.py # main code for hydralora  inference
     -- constant.py # lora candidate module names
 |-- Eval # usage code for evaluation
     -- mmlu.py
