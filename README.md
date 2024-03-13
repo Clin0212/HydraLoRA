@@ -105,7 +105,7 @@ python hydralora/inference.py \
     --split test \
     --lang en \
     --n_shot 0 \
-    --batch_size 4 >"eval_result/eval_task_name.log"
+    --batch_size 4
 '''
 
 ## Citation
