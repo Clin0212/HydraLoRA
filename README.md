@@ -7,7 +7,7 @@ Fine-tuning a small subset of parameters offers a streamlined approach for domai
 This intrinsic characteristic of methods like LoRA often results in them falling short of the FFT baseline, which updates all parameters, thereby creating a trade-off between efficiency and model quality. 
 
 <figure style="text-align:center">
-  <img src="./figure/Heterogeneity.png">
+  <img src="Heterogeneity.png">
 </figure>
 The figure demostrates erformance impact of corpus heterogeneity on full fine-tuning vs. parameter-efficient fine-tuning. Heterogeneity signifies the diversity within the dataset, often leading to intereference due to its varied content and style. Parameter-efficient approaches are particularly sensitive, suffering greater performance losses in heterogeneous cases.
 
@@ -18,12 +18,12 @@ This issue of compromised quality in a low-parameter setting becomes even more p
 
 
 <figure style="text-align:center">
-  <img src="./figure/LoRA_breakdown.png">
+  <img src="LoRA_breakdown.png">
 </figure>
 Breakdown analysis of LoRA modules.Consider LLaMA2-7b (random seed=42), which contains 32 decoder layers, corresponding to 32 adaptive modules. Each module consists of **0: q_proj_A, 1: q_proj_B, 2: v_proj_A, 3: v_proj_B** submodules. This makes a total of 32 X 4 submodules. (a,b) left displays all submodules. (a,b) center shows all even submodules, i.e. the A matrix. (a,b) right represents all odd submodules, i.e. the B matrix. It can be seen that the differences in the fine-tuned LoRA modules for different tasks arise mainly from the B matrix.
 
 <figure style="text-align:center">
-  <img src="./figure/Heterogeneity.png">
+  <img src="lora.png">
 </figure>
 
 llustration of LoRA architecture changes in HydraLoRA. Only the tunable parameters
@@ -92,7 +92,10 @@ python  hydralora/fine-tuning.py \
     --plot_loss \
     --fp16
 ```
+
 **3. hydralora inference**: 
+
+'''
 python hydralora/inference.py \
     --model_name_or_path path_model \
     --adapter_name_or_path  adapter_path\
@@ -103,6 +106,7 @@ python hydralora/inference.py \
     --lang en \
     --n_shot 0 \
     --batch_size 4 >"eval_result/eval_task_name.log"
+'''
 
 ## Citation
 If our work is useful for you, please consider citing our paper:
