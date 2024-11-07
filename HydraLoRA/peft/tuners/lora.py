@@ -57,8 +57,6 @@ class LoraConfig(PeftConfig):
     )
     lora_alpha: int = field(default=None, metadata={"help": "Lora alpha"})
     lora_nums: int = field(default=None, metadata={"help": "Numbers of Lora"})
-    blc_alpha: int = field(default=None, metadata={"help": "Alpha of blcloss"})
-    blc_weight: int = field(default=None, metadata={"help": "Weight of blcloss"})
     lora_dropout: float = field(default=None, metadata={"help": "Lora dropout"})
     merge_weights: bool = field(
         default=False, metadata={"help": "Merge weights of the original model and the Lora model"}
@@ -130,8 +128,6 @@ class LoraModel(torch.nn.Module):
             "lora_alpha": self.peft_config.lora_alpha,
             "lora_dropout": self.peft_config.lora_dropout,
             "lora_nums": self.peft_config.lora_nums,
-            "blc_alpha": self.peft_config.blc_alpha,
-            "blc_weight": self.peft_config.blc_weight,
             "fan_in_fan_out": self.peft_config.fan_in_fan_out,
             "merge_weights": (self.peft_config.merge_weights or self.peft_config.inference_mode)
             and not is_hf_device_map_available,
@@ -266,8 +262,6 @@ class Linear(nn.Linear, LoraLayer):
         r: int = 0,
         lora_alpha: int = 1,
         lora_nums: int = 2,
-        blc_alpha: float = 0.0,
-        blc_weight: float = 0.0,
         lora_dropout: float = 0.0,
         fan_in_fan_out: bool = False,  # Set this to True if the layer to replace stores weight like (fan_in, fan_out)
         merge_weights: bool = True,
@@ -277,8 +271,6 @@ class Linear(nn.Linear, LoraLayer):
         LoraLayer.__init__(self, r=r, lora_alpha=lora_alpha, lora_dropout=lora_dropout, merge_weights=merge_weights)
 
         self.lora_num = lora_nums
-        self.blc_alpha = blc_alpha
-        self.blc_weight = blc_weight
         
         self.fan_in_fan_out = fan_in_fan_out
 
@@ -350,17 +342,6 @@ class Linear(nn.Linear, LoraLayer):
                     result = result + torch.unsqueeze(route_weight[:,:,i], -1) * getattr(self, f"lora_B{i}")(getattr(self, f"lora_A")(self.lora_dropout(x))) * self.scaling
 
         blcls = torch.zeros(1)[0].to(result)
-        if task_types != None:
-            if self.blc_weight != 0:
-                task_types = task_types.view(-1, 1)
-                blcls = self.cv_squared((
-                    route_weight.sum(dim=(1)) * torch.where(
-                        torch.concat(
-                            ((task_types==1).repeat(1, self.lora_num//2), (task_types==0).repeat(1, self.lora_num//2)), dim=-1
-                            ), 1.0+self.blc_alpha, 1.0-self.blc_alpha
-                        )
-                    ).flatten()
-                ) * self.blc_weight
+
 
         return result, blcls
-
