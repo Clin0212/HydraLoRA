@@ -1,4 +1,4 @@
-# [NeurIPS Oral🚀] HydraLoRA: An Asymmetric LoRA Architecture for Efficient Fine-Tuning
+# [NeurIPS'24 Oral] HydraLoRA: An Asymmetric LoRA Architecture for Efficient Fine-Tuning
 This repo contains the source code of [HydraLoRA](https://arxiv.org/abs/2404.19245). 
 
 Discover the power of Asymmetric LoRA—achieving superb performance with significantly fewer parameters! 🌟 HydraLoRA features an asymmetric fine-tuning architecture capable of effectively identifying and adapting to the "intrinsic components" within the data—sub-domains or diverse tasks that may be challenging for domain experts to explicitly delineate.
@@ -9,6 +9,9 @@ Discover the power of Asymmetric LoRA—achieving superb performance with signif
 
 **Figure 1**: llustration of LoRA architecture changes in HydraLoRA. Only the tunable parameters
 are shown in this Figure. (a) LoRA architecture with matrix A to achieve low rank and matrix B to recover. (b) under the same parameter count, a monolithic LoRA is splitted into multiple smaller A and B matrices to avoid training interference. (c) based on (b), HydraLoRA has an asymmetric structure that has a shared A matrix and multiple B matrices.
+
+## 🚀 Updates
+- 2024/12/01 ---  Added [MLLM_HydraLoRA](MLLM-HydraLoRA/README.md) version for Multimodal Large Language Model (Llava).
 
 ## 🔥 Motivation and Observation
 
