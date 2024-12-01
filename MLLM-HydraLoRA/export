@@ -1,0 +1,11 @@
+export CUDA_HOME=/usr/local/cuda-12.1
+export HF_ENDPOINT=https://hf-mirror.com
+conda activate MLLM_HydraLoRA
+export BNB_CUDA_VERSION=118
+
+export PYTHONPATH="${PYTHONPATH}:$(pwd):$PROJ_ROOT"
+
+export HISTSIZE=0
+
+export PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.6
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:32
