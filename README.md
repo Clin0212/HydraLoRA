@@ -124,11 +124,13 @@ models = [
 
 If you find our work helpful, please consider citing our paper:
 ```
-@inproceedings{tian2024hydralora,
-  title={HydraLoRA: An Asymmetric LoRA Architecture for Efficient Fine-Tuning},
-  author={Tian, Chunlin and Shi, Zhan and Guo, Zhijiang and Li, Li and Xu, Chengzhong},
-  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
-  year={2024}
+@inproceedings{
+tian2024hydralora,
+title={HydraLoRA: An Asymmetric LoRA Architecture for Efficient Fine-Tuning},
+author={Chunlin Tian and Zhan Shi and Zhijiang Guo and Li Li and Cheng-zhong Xu},
+booktitle={The Thirty-eighth Annual Conference on Neural Information Processing Systems},
+year={2024},
+url={https://openreview.net/forum?id=qEpi8uWX3N}
 }
 ```
 
