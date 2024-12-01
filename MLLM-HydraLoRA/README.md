@@ -83,7 +83,7 @@ If you find our work helpful, please consider citing our paper:
 ```
 @inproceedings{
 tian2024hydralora,
-title={HydraLo{RA}: An Asymmetric Lo{RA} Architecture for Efficient Fine-Tuning},
+title={HydraLoRA: An Asymmetric LoRA Architecture for Efficient Fine-Tuning},
 author={Chunlin Tian and Zhan Shi and Zhijiang Guo and Li Li and Cheng-zhong Xu},
 booktitle={The Thirty-eighth Annual Conference on Neural Information Processing Systems},
 year={2024},
