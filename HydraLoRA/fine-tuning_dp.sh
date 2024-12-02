@@ -17,14 +17,20 @@ per_device_eval_batch_size= 1
 gradient_accumulation_steps= 8
 max_seq_length= 1024
 output_dir= path_to_output
+deepspeed_config_file= ds_zero3_offload.json
 exp_name=lora_model
 
 lora_b_nums= 4  # Developer-specific, k-means, or DBSCAN et al.
 
 
 
-CUDA_VISIBLE_DEVICES=1 \
-python   fine-tuning.py \
+
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+CUDA_LAUNCH_BLOCKING=1 \
+torchrun --nnodes 1 --nproc_per_node 4 --node_rank 0 --master_port 29502 \
+    fine-tuning.py \
+    --deepspeed ${deepspeed_config_file} \
     --model_name_or_path ${pretrained_model} \
     --tokenizer_name_or_path ${tokenizer_path} \
     --dataset_dir ${dataset_dir} \
@@ -47,8 +53,10 @@ python   fine-tuning.py \
     --eval_steps 5000 \
     --save_steps 5000 \
     --gradient_accumulation_steps ${gradient_accumulation_steps} \
+    --preprocessing_num_workers 8 \
     --max_seq_length ${max_seq_length} \
     --output_dir ${output_dir}/${exp_name} \
+    --ddp_timeout 30000 \
     --logging_first_step True \
     --lora_rank ${lora_rank} \
     --lora_alpha ${lora_alpha} \
@@ -58,5 +66,6 @@ python   fine-tuning.py \
     --torch_dtype bfloat16 \
     --validation_file ${validation_file} \
     --load_in_kbits 16 \
+    --ddp_find_unused_parameters False \
     --overwrite_output_dir \
   
