@@ -27,7 +27,7 @@ cp llava_llama.py llava/model/language_model/
 cp train.py llava/train/
 ```
   
-To  use moe.py, you have to modify "llava/model/\_\_init__.py" as follows:
+To  use `moe.py`, you have to modify `llava/model/\_\_init__.py` as follows:
 ```
 try:
     from .language_model.llava_llama import LlavaLlamaForCausalLM, LlavaConfig
@@ -39,9 +39,9 @@ except:
 
 ```
 
-## 🕹️ Quickstart (Fine-tuning)
+## 🕹️ Quickstart
 
-**MLLM_HydraLoRA Training**
+**MLLM_HydraLoRA Fine-tuning**
 
 ```
 bash HydraLoRA/MLLM_HydraLoRA.sh
