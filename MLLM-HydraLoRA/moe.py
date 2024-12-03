@@ -6,36 +6,36 @@ import torch.nn.functional as F
 from torch import nn
 
 class LoRALayer(nn.Module):
-    def __init__(self, fan_in, fan_out, rank=4, lora_dropout_p=0.0, lora_alpha=1, lora_A=None):
+    def __init__(self, fan_in, fan_out, rank=4, lora_dropout_p=0.0, lora_alpha=1, LoRA_A=None):
         super().__init__()
         # if weight is stored as (fan_out, fan_in), the memory layout of A & B follows (W + BA)x
         # otherwise, it's x(W + AB). This allows us to tie the weights between linear layers and embeddings
-        self.lora_A = lora_A if lora_A is not None else nn.Parameter(torch.zeros((rank, fan_in)))
-        self.lora_B = nn.Parameter(torch.zeros((fan_out, rank)))
-        self.lora_alpha, self.rank = lora_alpha, rank
+        self.LoRA_A = LoRA_A if LoRA_A is not None else nn.Parameter(torch.zeros((rank, fan_in)))
+        self.LoRA_B = nn.Parameter(torch.zeros((fan_out, rank)))
+        self.LoRA_alpha, self.rank = lora_alpha, rank
         self.scaling = lora_alpha / rank
-        self.lora_dropout = nn.Dropout(p=lora_dropout_p) if lora_dropout_p > 0 else lambda x: x
+        self.LoRA_dropout = nn.Dropout(p=lora_dropout_p) if lora_dropout_p > 0 else lambda x: x
         self.reset_parameters()
 
     def reset_parameters(self):
         # initialize B the same way as the default for nn.Linear and A to zero
         # this is different than what is described in the paper but should not affect performance
-        # Initialize A and B
-        if self.lora_A is not None and not hasattr(self.lora_A, "_initialized"):
-            nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
-            self.lora_A._initialized = True  # Marked as initialized
-        nn.init.zeros_(self.lora_B)
+        # 初始化 A 和 B
+        if self.LoRA_A is not None and not hasattr(self.LoRA_A, "_initialized"):
+            nn.init.kaiming_uniform_(self.LoRA_A, a=math.sqrt(5))
+            self.LoRA_A._initialized = True  # 标记为已初始化
+        nn.init.zeros_(self.LoRA_B)
 
     def forward(self, X):             
-        result = (self.lora_dropout(X) @ self.lora_A.transpose(0, 1) @ self.lora_B.transpose(0, 1)) * self.scaling
+        result = (self.LoRA_dropout(X) @ self.LoRA_A.transpose(0, 1) @ self.LoRA_B.transpose(0, 1)) * self.scaling
         # result += F.linear(x, T(self.weight), bias=self.bias)
         return result
 
     @classmethod
-    def from_linear(cls, layer, rank=4, lora_dropout_p=0.0, lora_alpha=1, shared_lora_A=None):
+    def from_linear(cls, layer, rank=4, lora_dropout_p=0.0, lora_alpha=1, shared_LoRA_A=None):
         fan_out, fan_in = layer.weight.shape
         return cls(
-            fan_in, fan_out, rank=rank, lora_dropout_p=lora_dropout_p, lora_alpha=lora_alpha, lora_A = shared_lora_A
+            fan_in, fan_out, rank=rank, lora_dropout_p=lora_dropout_p, lora_alpha=lora_alpha, LoRA_A = shared_LoRA_A
         )
 
 
@@ -51,17 +51,17 @@ class LoRA_MOE_LM(nn.Module): # for llm
     ):
         super().__init__()
         self.args = args
-        self.lora_rank = lora_rank
-        self.lora_alpha = lora_alpha
+        self.LoRA_rank = lora_rank
+        self.LoRA_alpha = lora_alpha
         self.num_experts = num_experts
 
         d_model = original_module.gate_proj.in_features
         mlp_width = original_module.gate_proj.out_features
         self.original_module = original_module
 
-        self.shared_lora_A_gate = nn.Parameter(torch.zeros((lora_rank, d_model)))
-        self.shared_lora_A_up = nn.Parameter(torch.zeros((lora_rank, d_model)))
-        self.shared_lora_A_down = nn.Parameter(torch.zeros((lora_rank, mlp_width)))
+        self.shared_LoRA_A_gate = nn.Parameter(torch.zeros((lora_rank, d_model)))
+        self.shared_LoRA_A_up = nn.Parameter(torch.zeros((lora_rank, d_model)))
+        self.shared_LoRA_A_down = nn.Parameter(torch.zeros((lora_rank, mlp_width)))
 
         self.moe_gate = nn.ModuleList()
         self.moe_down = nn.ModuleList()
@@ -73,24 +73,24 @@ class LoRA_MOE_LM(nn.Module): # for llm
         for _ in range(num_experts):
             self.moe_gate.append(LoRALayer.from_linear(
                 nn.Linear(d_model, mlp_width),
-                rank=self.lora_rank,
+                rank=self.LoRA_rank,
                 lora_dropout_p=0.05,
-                lora_alpha=self.lora_alpha,
-                shared_lora_A=self.shared_lora_A_gate
+                lora_alpha=self.LoRA_alpha,
+                shared_LoRA_A=self.shared_LoRA_A_gate
                 ))
             self.moe_up.append(LoRALayer.from_linear(
                 nn.Linear(d_model, mlp_width),
-                rank=self.lora_rank,
+                rank=self.LoRA_rank,
                 lora_dropout_p=0.05,
-                lora_alpha=self.lora_alpha,
-                shared_lora_A=self.shared_lora_A_up
+                lora_alpha=self.LoRA_alpha,
+                shared_LoRA_A=self.shared_LoRA_A_up
                 ))
             self.moe_down.append(LoRALayer.from_linear(
                 nn.Linear(mlp_width, d_model),
-                rank=self.lora_rank,
+                rank=self.LoRA_rank,
                 lora_dropout_p=0.05,
-                lora_alpha=self.lora_alpha,
-                shared_lora_A=self.shared_lora_A_down
+                lora_alpha=self.LoRA_alpha,
+                shared_LoRA_A=self.shared_LoRA_A_down
                 ))
         
         self.router = nn.Linear(d_model, self.num_experts)

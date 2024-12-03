@@ -21,7 +21,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, BitsAn
 import torch
 from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-from peft import PeftModel
+
 
 def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, **kwargs):
     kwargs = {"device_map": device_map, **kwargs}
@@ -44,7 +44,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
 
     if use_flash_attn:
         kwargs['attn_implementation'] = 'flash_attention_2'
-
+    
     if 'llava' in model_name.lower():
         # Load LLaVA model
         if 'lora' in model_name.lower() and model_base is None:
@@ -60,19 +60,19 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                 model.lm_head.weight = torch.nn.Parameter(torch.empty(token_num, tokem_dim, device=model.device, dtype=model.dtype))
                 model.model.embed_tokens.weight = torch.nn.Parameter(torch.empty(token_num, tokem_dim, device=model.device, dtype=model.dtype))
 
-            # if 'mole' in model_name.lower() or 'mohle' in model_name.lower():
-            #     print('Patching moe...')
-            #     if os.path.exists(os.path.join(model_path, 'moe_args.pth')):
-            #         training_args = torch.load(os.path.join(model_path, 'moe_args.pth'))
-            #     num_layers = len(model.base_model.layers)
-            #     for i in range(num_layers):
-            #         original_mlp = model.base_model.layers[i].mlp
-            #         model.base_model.layers[i].mlp = \
-            #             LoRA_MOE_LM(args=training_args,
-            #                 lora_rank=training_args.lora_rank,
-            #                 lora_alpha=training_args.lora_alpha,
-            #                 num_experts=training_args.llm_moe_num_experts,
-            #                 original_module=original_mlp).to(model.device, model.dtype)
+            if 'mole' in model_name.lower() or 'mohle' in model_name.lower():
+                print('Patching moe...')
+                if os.path.exists(os.path.join(model_path, 'moe_args.pth')):
+                    training_args = torch.load(os.path.join(model_path, 'moe_args.pth'))
+                num_layers = len(model.base_model.layers)
+                for i in range(num_layers):
+                    original_mlp = model.base_model.layers[i].mlp
+                    model.base_model.layers[i].mlp = \
+                        LoRA_MOE_LM(args=training_args,
+                            lora_rank=training_args.lora_rank,
+                            lora_alpha=training_args.lora_alpha,
+                            num_experts=training_args.llm_moe_num_experts,
+                            original_module=original_mlp).to(model.device, model.dtype)
                             
             print('Loading additional LLaVA weights...')
             if os.path.exists(os.path.join(model_path, 'non_lora_trainables.bin')):
@@ -87,12 +87,29 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                         subfolder=subfolder)
                     return torch.load(cache_file, map_location='cpu')
                 non_lora_trainables = load_from_hf(model_path, 'non_lora_trainables.bin')
+            
+
+
             non_lora_trainables = {(k[11:] if k.startswith('base_model.') else k): v for k, v in non_lora_trainables.items()}
             if any(k.startswith('model.model.') for k in non_lora_trainables):
                 non_lora_trainables = {(k[6:] if k.startswith('model.') else k): v for k, v in non_lora_trainables.items()}
+
             model.load_state_dict(non_lora_trainables, strict=False)
 
-            
+            if 'mole' in model_name.lower() or 'mohle' in model_name.lower():
+                # 检查替换是否成功
+                if isinstance(model.base_model.layers[0].mlp, LoRA_MOE_LM):
+                    print("✅ Patch successful: LoRA_MOE_LM applied to layer[0].mlp")
+                else:
+                    print("❌ Patch failed: layer[0].mlp is not LoRA_MOE_LM")
+
+                # 检查 moe_gate[0].LoRA_A 参数
+                moe_gate_LoRA_A = model.base_model.layers[0].mlp.moe_gate[0].LoRA_A
+                print(f"moe_gate[0].LoRA_A shape: {moe_gate_LoRA_A.shape}")
+                print("Sample values from moe_gate[0].LoRA_A:")
+                print(moe_gate_LoRA_A[:3, :3])  # 输出矩阵的前 3 行 3 列的值
+
+            from peft import PeftModel
             print('Loading LoRA weights...')
             model = PeftModel.from_pretrained(model, model_path)
             print('Merging LoRA weights...')
@@ -133,39 +150,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                     low_cpu_mem_usage=True,
                     **kwargs
                 )
-                if 'mole' in model_name.lower() or 'mohle' in model_name.lower():
-                    print('Patching moe...')
-                    if os.path.exists(os.path.join(model_path, 'moe_args.pth')):
-                        training_args = torch.load(os.path.join(model_path, 'moe_args.pth'))
-                    num_layers = len(model.base_model.layers)
-                    for i in range(num_layers):
-                        original_mlp = model.base_model.layers[i].mlp
-                        model.base_model.layers[i].mlp = \
-                            LoRA_MOE_LM(args=training_args,
-                                lora_rank=training_args.lora_rank,
-                                lora_alpha=training_args.lora_alpha,
-                                num_experts=training_args.llm_moe_num_experts,
-                                original_module=original_mlp).to(model.device, model.dtype)
 
-                    if os.path.exists(os.path.join(model_path, 'non_lora_trainables.bin')):
-                        non_lora_trainables = torch.load(os.path.join(model_path, 'non_lora_trainables.bin'), map_location='cpu')
-                        non_lora_trainables = {(k[11:] if k.startswith('base_model.') else k): v for k, v in non_lora_trainables.items()}
-                        if any(k.startswith('model.model.') for k in non_lora_trainables):
-                            non_lora_trainables = {(k[6:] if k.startswith('model.') else k): v for k, v in non_lora_trainables.items()}
-                        model.load_state_dict(non_lora_trainables, strict=False)
-
-                    # 检查替换是否成功
-                    if isinstance(model.base_model.layers[0].mlp, LoRA_MOE_LM):
-                        print("✅ Patch successful: LoRA_MOE_LM applied to layer[0].mlp")
-                    else:
-                        print("❌ Patch failed: layer[0].mlp is not LoRA_MOE_LM")
-
-                    # 检查 moe_gate[0].lora_A 参数
-                    moe_gate_lora_A = model.base_model.layers[0].mlp.moe_gate[0].lora_A
-                    print(f"moe_gate[0].lora_A shape: {moe_gate_lora_A.shape}")
-                    print("Sample values from moe_gate[0].lora_A:")
-                    print(moe_gate_lora_A[:3, :3])  # 输出矩阵的前 3 行 3 列的值
-                    
     else:
         # Load language model
         if model_base is not None:

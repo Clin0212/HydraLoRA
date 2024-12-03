@@ -32,18 +32,18 @@ cp train.py llava/train/
 **MLLM_HydraLoRA Training**
 
 ```
-bash HydraLoRA/fine-tuning.sh
+bash HydraLoRA/MLLM_HydraLoRA.sh
 ```
 
 **Details**
 ```
-CUDA_VISIBLE_DEVICES=1 python llava/train/train_mem.py \
+CUDA_VISIBLE_DEVICES=0 python llava/train/train_mem.py \
     --use_lora True --lora_rank 32 --lora_alpha 64 --mm_projector_lr 2e-5 \
     --llm_moe True --dense_moe True --lora_modules q_proj,k_proj,v_proj,o_proj --llm_moe_num_experts 3 --moe_balance_w 0.05 \
     --model_name_or_path ./checkpoints/llava-v1.5-7b \
     --version v1 \
     --freeze_backbone True \
-    --data_path ./playground/data/llava_selected_60k.json \
+    --data_path ./playground/data/llava_v1_5_mix665k.json \
     --image_folder ./playground/data \
     --vision_tower ./checkpoints/clip-vit-large-patch14-336 \
     --pretrain_mm_mlp_adapter ./checkpoints/llava-v1.5-7b/mm_projector.bin \
@@ -54,7 +54,7 @@ CUDA_VISIBLE_DEVICES=1 python llava/train/train_mem.py \
     --image_aspect_ratio resize \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./checkpoints/llava-v1.5-7b-mohle-60k \
+    --output_dir ./checkpoints/llava-v1.5-7b-lora-mohle \
     --num_train_epochs 1 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
@@ -75,7 +75,30 @@ CUDA_VISIBLE_DEVICES=1 python llava/train/train_mem.py \
     --lazy_preprocess True
 
 ```
+## 🌋 Evaluation(TextVQA for example)
 
+**Prepare for evaluation**  
+check [scripts](https://github.com/haotian-liu/LLaVA/blob/main/docs/Evaluation.md#scripts) and [data](https://github.com/haotian-liu/LLaVA/blob/main/docs/Evaluation.md#textvqa)
+
+**Gen answers**
+```
+python -m llava.eval.model_vqa_loader \
+    --model-base checkpoints/llava-v1.5-7b \
+    --model-path checkpoints/llava-v1.5-7b-lora-mohle \
+    --question-file ./playground/data/eval/textvqa/llava_textvqa_val_v051_ocr.jsonl \
+    --image-folder ./playground/data/eval/textvqa/train_images \
+    --answers-file ./eval-output/textvqa/llava-mohle-7b.jsonl \
+    --temperature 0 \
+    --conv-mode vicuna_v1
+
+```
+**Evaluate**
+```
+python -m llava.eval.eval_textvqa \
+    --annotation-file ./playground/data/eval/textvqa/TextVQA_0.5.1_val.json \
+    --result-file ./eval-output/textvqa/llava-mohle-7b.jsonl
+
+```
 ## ⭐ Citation
 
 If you find our work helpful, please consider citing our paper:

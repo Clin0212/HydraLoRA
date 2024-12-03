@@ -899,8 +899,17 @@ def train(attn_implementation=None):
                     lora_rank=training_args.lora_rank,
                     lora_alpha=training_args.lora_alpha,
                     num_experts=training_args.llm_moe_num_experts,
-                    original_module=original_mlp).bfloat16()
-        torch.save(training_args, os.path.join(training_args.output_dir, 'moe_args.pth'))
+                    original_module=original_mlp).to(model.device, model.dtype)
+            model.base_model.model.model.layers[i].mlp.requires_grad = True
+        
+        if isinstance(model.base_model.model.model.layers[0].mlp, LoRA_MOE_LM):
+            print(f"✅ Layer 0 mlp successfully replaced with LoRA_MOE_LM")
+        else:
+            print(f"❌ Layer 0 mlp replacement failed, current type: {type(model.base_model.model.model.layers[0].mlp)}")
+
+    for k, t in model.base_model.model.model.layers[0].mlp.named_parameters():
+        if "lora_" not in k and t.requires_grad:
+            print(k, t.shape)
 
     # if training_args.lora_enable:
     #     from peft import LoraConfig, get_peft_model
@@ -1030,6 +1039,8 @@ def train(attn_implementation=None):
     else:
         safe_save_model_for_hf_trainer(trainer=trainer,
                                        output_dir=training_args.output_dir)
+    # save mohle args for Inference
+    torch.save(training_args, os.path.join(training_args.output_dir, 'moe_args.pth'))
 
 
 if __name__ == "__main__":

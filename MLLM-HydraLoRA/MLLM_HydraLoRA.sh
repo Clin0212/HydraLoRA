@@ -1,10 +1,10 @@
-CUDA_VISIBLE_DEVICES=1 python llava/train/train_mem.py \
+CUDA_VISIBLE_DEVICES=0 python llava/train/train_mem.py \
     --use_lora True --lora_rank 32 --lora_alpha 64 --mm_projector_lr 2e-5 \
     --llm_moe True --dense_moe True --lora_modules q_proj,k_proj,v_proj,o_proj --llm_moe_num_experts 3 --moe_balance_w 0.05 \
     --model_name_or_path ./checkpoints/llava-v1.5-7b \
     --version v1 \
     --freeze_backbone True \
-    --data_path ./playground/data/llava_selected_60k.json \
+    --data_path ./playground/data/llava_v1_5_mix665k.json \
     --image_folder ./playground/data \
     --vision_tower ./checkpoints/clip-vit-large-patch14-336 \
     --pretrain_mm_mlp_adapter ./checkpoints/llava-v1.5-7b/mm_projector.bin \
@@ -15,7 +15,7 @@ CUDA_VISIBLE_DEVICES=1 python llava/train/train_mem.py \
     --image_aspect_ratio resize \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./checkpoints/llava-v1.5-7b-mohle-60k \
+    --output_dir ./checkpoints/llava-v1.5-7b-lora-mohle \
     --num_train_epochs 1 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
