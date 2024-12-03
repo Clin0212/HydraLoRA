@@ -102,6 +102,8 @@ bash HydraLoRA/fine-tuning.sh
 bash HydraLoRA/fine-tuning_dp.sh
 ```
 
+[Extend to other models.](https://github.com/Clin0212/HydraLoRA/issues/11)
+
 ### **3. Evaluate:**
 
 Use [opencompass](https://github.com/open-compass/opencompass/tree/main) for evaluation. 
@@ -126,8 +128,6 @@ models = [
     )
 ]
 ```
-
-
 
 
 For zero-shot, `opencompass/configs/datasets/mmlu/mmlu_ppl_ac766d.py` (line 89)
