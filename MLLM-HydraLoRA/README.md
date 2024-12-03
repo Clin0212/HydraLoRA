@@ -26,6 +26,18 @@ cp builder.py llava/model/
 cp llava_llama.py llava/model/language_model/
 cp train.py llava/train/
 ```
+  
+To  use moe.py, you have to modify "llava/model/\_\_init__.py" as follows:
+```
+try:
+    from .language_model.llava_llama import LlavaLlamaForCausalLM, LlavaConfig
+    from .language_model.llava_mpt import LlavaMptForCausalLM, LlavaMptConfig
+    from .language_model.llava_mistral import LlavaMistralForCausalLM, LlavaMistralConfig
+    from .moe import LoRA_MOE_LM
+except:
+    pass
+
+```
 
 ## 🕹️ Quickstart (Fine-tuning)
 
